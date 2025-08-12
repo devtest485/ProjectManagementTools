@@ -1,0 +1,23 @@
+﻿@inherits LayoutComponentBase
+
+<div class="auth-layout">
+    <MudThemeProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+
+    <!-- Floating Particles Background -->
+    <div class="particles">
+
+        @for (int i = 0; i < 20; i++)
+        {
+            var left = Random.Shared.Next(0, 100);
+            var top = Random.Shared.Next(0, 100);
+            var delay = Random.Shared.Next(0, 6);
+            <div class="particle" style="left: @(left)%; top: @(top)%; animation-delay: @(delay)s;"></div>
+        }
+    </div>
+    <!-- Main Content -->
+    <div class="fade-in-up min-h-screen">
+        @Body
+    </div>
+</div>

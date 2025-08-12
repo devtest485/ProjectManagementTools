@@ -1,23 +1,66 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <!-- App Bar -->
+    <MudAppBar Elevation="1" Class="main-app-bar">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       OnClick="@ToggleDrawer" />
+
+        <MudText Typo="Typo.h6" Class="app-title">
+            ProjectFlow
+        </MudText>
+
+        <MudSpacer />
+
+        <!-- Search -->
+        <MudTextField @bind-Value="searchText"
+                      Placeholder="Search projects, tasks..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      IconSize="Size.Medium"
+                      Class="search-field"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense" />
+
+        <!-- Notifications -->
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                       Color="Color.Inherit"
+                       Class="notification-btn" />
+
+        <!-- User Menu -->
         <NavMenu />
-    </div>
+    </MudAppBar>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+    <!-- Navigation Drawer -->
+    <MudDrawer @bind-Open="@drawerOpen"
+               Elevation="2"
+               Variant="@DrawerVariant.Mini"
+               OpenMiniOnHover="true"
+               ClipMode="DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
 
-        <article class="content px-4">
+    <!-- Main Content -->
+    <MudMainContent Class="main-content">
+        <div class="content-wrapper">
+            @* <ErrorBoundaryComponent> *@
             @Body
-        </article>
-    </main>
-</div>
+            @* </ErrorBoundaryComponent> *@
+        </div>
+    </MudMainContent>
+</MudLayout>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    private bool drawerOpen = true;
+    private string searchText = "";
+    
+    private void ToggleDrawer()
+    {
+        drawerOpen = !drawerOpen;
+    }
+}

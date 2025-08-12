@@ -1,6 +1,9 @@
+using MudBlazor.Services;
 using ProjectManagementTools.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMudServices();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
