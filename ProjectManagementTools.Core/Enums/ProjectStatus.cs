@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ProjectManagementTools.Core.Enums
+﻿namespace ProjectManagementTools.Core.Enums
 {
-    internal class ProjectStatus
+    public enum ProjectStatus
     {
+        Planning = 1,
+        Active = 2,
+        OnHold = 3,
+        Completed = 4,
+        Cancelled = 5,
+        Archived = 6
     }
 }

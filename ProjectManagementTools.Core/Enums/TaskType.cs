@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ProjectManagementTools.Core.Enums
+﻿namespace ProjectManagementTools.Core.Enums
 {
-    internal class TaskType
+    public enum TaskType
     {
+        Epic = 1,
+        Story = 2,
+        Task = 3,
+        Bug = 4,
+        Improvement = 5,
+        Spike = 6
     }
 }

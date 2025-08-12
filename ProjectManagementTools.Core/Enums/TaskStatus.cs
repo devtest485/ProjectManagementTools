@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ProjectManagementTools.Core.Enums
+﻿namespace ProjectManagementTools.Core.Enums
 {
-    internal class TaskStatus
+    public enum TaskStatus
     {
+        NotStarted = 1,
+        ToDo = 2,
+        InProgress = 3,
+        Review = 4,
+        Testing = 5,
+        Done = 6,
+        Blocked = 7,
+        Cancelled = 8
     }
 }
