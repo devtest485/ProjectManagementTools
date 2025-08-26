@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using ProjectManagementTools.Core.DTOs;
 using ProjectManagementTools.Core.Entities.Auth;
 using ProjectManagementTools.Core.Interfaces.Services;
 using ProjectManagementTools.Core.ResponseObject;
 
-namespace ProjectManagementTools.Web.Services
+namespace ProjectManagementTools.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
@@ -15,103 +14,28 @@ namespace ProjectManagementTools.Web.Services
         private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IEmailService emailService,
             IMapper mapper,
-            ILogger<AuthService> logger,
-            IHttpContextAccessor httpContextAccessor)
+            ILogger<AuthService> logger)
         {
-            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-            _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
-            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _emailService = emailService;
+            _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<AuthResult> LoginAsync(LoginViewModel model)
         {
-            // Validate model first
-            if (model == null)
-            {
-                _logger.LogWarning("LoginAsync called with null model");
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Invalid login request"
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
-            {
-                _logger.LogWarning("LoginAsync called with empty email or password");
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Email and password are required"
-                };
-            }
-
             try
             {
-                // Validate that we have a valid HTTP context
-                if (_httpContextAccessor.HttpContext == null)
-                {
-                    _logger.LogError("HTTP context is not available for login operation");
-                    return new AuthResult
-                    {
-                        Success = false,
-                        Message = "Service temporarily unavailable. Please try again."
-                    };
-                }
-
-                ApplicationUser user = null;
-
-                // Retry logic for database operations
-                var maxRetries = 3;
-                var retryCount = 0;
-
-                while (retryCount < maxRetries)
-                {
-                    try
-                    {
-                        // Find user with retry logic
-                        user = await _userManager.FindByEmailAsync(model.Email);
-                        break; // Success, exit retry loop
-                    }
-                    catch (InvalidOperationException ex) when (ex.Message.Contains("connection is closed"))
-                    {
-                        retryCount++;
-                        _logger.LogWarning(ex, "Database connection closed, retry attempt {RetryCount} for user {Email}",
-                            retryCount, model.Email);
-
-                        if (retryCount >= maxRetries)
-                        {
-                            _logger.LogError(ex, "Max retries exceeded for finding user {Email}", model.Email);
-                            return new AuthResult
-                            {
-                                Success = false,
-                                Message = "Service temporarily unavailable. Please try again."
-                            };
-                        }
-
-                        // Wait before retry
-                        await Task.Delay(TimeSpan.FromMilliseconds(500 * retryCount));
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Unexpected error finding user {Email}", model.Email);
-                        throw; // Re-throw non-connection related exceptions
-                    }
-                }
-
+                var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null)
                 {
-                    _logger.LogWarning("Login attempt for non-existent user {Email}", model.Email);
                     return new AuthResult
                     {
                         Success = false,
@@ -121,7 +45,6 @@ namespace ProjectManagementTools.Web.Services
 
                 if (!user.IsActive)
                 {
-                    _logger.LogWarning("Login attempt for inactive user {Email}", model.Email);
                     return new AuthResult
                     {
                         Success = false,
@@ -129,76 +52,13 @@ namespace ProjectManagementTools.Web.Services
                     };
                 }
 
-                // Attempt sign in with retry logic
-                retryCount = 0;
-                Microsoft.AspNetCore.Identity.SignInResult result = null;
-
-                while (retryCount < maxRetries)
-                {
-                    try
-                    {
-                        result = await _signInManager.PasswordSignInAsync(
-                            user, model.Password, model.RememberMe, lockoutOnFailure: true);
-                        break; // Success, exit retry loop
-                    }
-                    catch (InvalidOperationException ex) when (ex.Message.Contains("connection is closed"))
-                    {
-                        retryCount++;
-                        _logger.LogWarning(ex, "Database connection closed during sign in, retry attempt {RetryCount} for user {Email}",
-                            retryCount, model.Email);
-
-                        if (retryCount >= maxRetries)
-                        {
-                            _logger.LogError(ex, "Max retries exceeded for sign in {Email}", model.Email);
-                            return new AuthResult
-                            {
-                                Success = false,
-                                Message = "Service temporarily unavailable. Please try again."
-                            };
-                        }
-
-                        await Task.Delay(TimeSpan.FromMilliseconds(500 * retryCount));
-                    }
-                }
-
-                if (result == null)
-                {
-                    _logger.LogError("Sign in result is null for user {Email}", model.Email);
-                    return new AuthResult
-                    {
-                        Success = false,
-                        Message = "Service temporarily unavailable. Please try again."
-                    };
-                }
+                var result = await _signInManager.PasswordSignInAsync(
+                    user, model.Password, model.RememberMe, lockoutOnFailure: true);
 
                 if (result.Succeeded)
                 {
-                    // Update last login date with retry logic
-                    retryCount = 0;
-                    while (retryCount < maxRetries)
-                    {
-                        try
-                        {
-                            user.LastLoginDate = DateTime.UtcNow;
-                            await _userManager.UpdateAsync(user);
-                            break;
-                        }
-                        catch (InvalidOperationException ex) when (ex.Message.Contains("connection is closed"))
-                        {
-                            retryCount++;
-                            _logger.LogWarning(ex, "Database connection closed during user update, retry attempt {RetryCount} for user {Email}",
-                                retryCount, model.Email);
-
-                            if (retryCount >= maxRetries)
-                            {
-                                // Log but don't fail the login for this
-                                _logger.LogError(ex, "Failed to update last login date for user {Email}", model.Email);
-                                break;
-                            }
-
-                            await Task.Delay(TimeSpan.FromMilliseconds(500 * retryCount));
-                        }
-                    }
+                    user.LastLoginDate = DateTime.UtcNow;
+                    await _userManager.UpdateAsync(user);
 
                     _logger.LogInformation("User {Email} logged in successfully", model.Email);
                     return new AuthResult
@@ -211,7 +71,6 @@ namespace ProjectManagementTools.Web.Services
 
                 if (result.IsLockedOut)
                 {
-                    _logger.LogWarning("User {Email} account is locked out", model.Email);
                     return new AuthResult
                     {
                         Success = false,
@@ -221,7 +80,6 @@ namespace ProjectManagementTools.Web.Services
 
                 if (result.RequiresTwoFactor)
                 {
-                    _logger.LogInformation("User {Email} requires two-factor authentication", model.Email);
                     return new AuthResult
                     {
                         Success = false,
@@ -229,43 +87,15 @@ namespace ProjectManagementTools.Web.Services
                     };
                 }
 
-                _logger.LogWarning("Failed login attempt for user {Email}", model.Email);
                 return new AuthResult
                 {
                     Success = false,
                     Message = "Invalid email or password"
                 };
             }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database update error during login for {Email}", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "Service has been disposed during login for {Email}", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Invalid operation during login for {Email}. Context may be invalid.", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during login for {Email}", model.Email);
+                _logger.LogError(ex, "Error during login for {Email}", model.Email);
                 return new AuthResult
                 {
                     Success = false,
@@ -328,15 +158,6 @@ namespace ProjectManagementTools.Web.Services
                     Errors = result.Errors.Select(e => e.Description).ToList()
                 };
             }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed during registration for {Email}", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during registration for {Email}", model.Email);
@@ -371,15 +192,6 @@ namespace ProjectManagementTools.Web.Services
                 {
                     Success = true,
                     Message = "If an account with that email exists, a password reset link has been sent."
-                };
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed during password reset for {Email}", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
                 };
             }
             catch (Exception ex)
@@ -426,15 +238,6 @@ namespace ProjectManagementTools.Web.Services
                     Errors = result.Errors.Select(e => e.Description).ToList()
                 };
             }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed during password reset for {Email}", model.Email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during password reset for {Email}", model.Email);
@@ -448,43 +251,13 @@ namespace ProjectManagementTools.Web.Services
 
         public async Task<ApplicationUser?> GetCurrentUserAsync()
         {
-            try
-            {
-                if (_httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
-                {
-                    return await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-                }
-                return null;
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while getting current user");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting current user");
-                return null;
-            }
+            return await _userManager.GetUserAsync(_signInManager.Context.User);
         }
 
         public async Task<UserProfileViewModel?> GetUserProfileAsync(string userId)
         {
-            try
-            {
-                var user = await _userManager.FindByIdAsync(userId);
-                return user != null ? _mapper.Map<UserProfileViewModel>(user) : null;
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while getting user profile for {UserId}", userId);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user profile for {UserId}", userId);
-                return null;
-            }
+            var user = await _userManager.FindByIdAsync(userId);
+            return user != null ? _mapper.Map<UserProfileViewModel>(user) : null;
         }
 
         public async Task<AuthResult> UpdateProfileAsync(UserProfileViewModel model)
@@ -527,15 +300,6 @@ namespace ProjectManagementTools.Web.Services
                     Success = false,
                     Message = "Failed to update profile",
                     Errors = result.Errors.Select(e => e.Description).ToList()
-                };
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while updating profile for user {UserId}", model.Id);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
                 };
             }
             catch (Exception ex)
@@ -581,15 +345,6 @@ namespace ProjectManagementTools.Web.Services
                     Errors = result.Errors.Select(e => e.Description).ToList()
                 };
             }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while changing password for user {UserId}", userId);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error changing password for user {UserId}", userId);
@@ -603,40 +358,13 @@ namespace ProjectManagementTools.Web.Services
 
         public async Task LogoutAsync()
         {
-            try
-            {
-                if (_httpContextAccessor.HttpContext != null)
-                {
-                    await _signInManager.SignOutAsync();
-                }
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "SignInManager has been disposed during logout");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during logout");
-            }
+            await _signInManager.SignOutAsync();
         }
 
         public async Task<bool> IsEmailConfirmedAsync(string userId)
         {
-            try
-            {
-                var user = await _userManager.FindByIdAsync(userId);
-                return user?.EmailConfirmed ?? false;
-            }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while checking email confirmation for user {UserId}", userId);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking email confirmation for user {UserId}", userId);
-                return false;
-            }
+            var user = await _userManager.FindByIdAsync(userId);
+            return user?.EmailConfirmed ?? false;
         }
 
         public async Task<AuthResult> ResendEmailConfirmationAsync(string email)
@@ -671,15 +399,6 @@ namespace ProjectManagementTools.Web.Services
                     Message = "Confirmation email sent successfully."
                 };
             }
-            catch (ObjectDisposedException ex)
-            {
-                _logger.LogError(ex, "UserManager has been disposed while resending email confirmation for {Email}", email);
-                return new AuthResult
-                {
-                    Success = false,
-                    Message = "Service temporarily unavailable. Please try again."
-                };
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error resending email confirmation for {Email}", email);
@@ -690,6 +409,6 @@ namespace ProjectManagementTools.Web.Services
                 };
             }
         }
-    
     }
+
 }
