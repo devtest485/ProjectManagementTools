@@ -1,6 +1,147 @@
-﻿@page "/account/login"
+﻿@page "/Account/Login"
 @layout AuthLayout
+@rendermode InteractiveServer
+
+<PageTitle>Login - ProjectFlow</PageTitle>
+
+<MudForm @ref="form" @bind-IsValid="@isFormValid" Model="@loginModel">
+    <MudText Typo="Typo.h5" Align="Align.Center" GutterBottom="true" Color="Color.Primary">
+        Welcome Back
+    </MudText>
+    <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-6" Color="Color.Tertiary">
+        Sign in to continue to your dashboard
+    </MudText>
+
+    <MudTextField @bind-Value="loginModel.Email"
+                  For="@(() => loginModel.Email)"
+                  Label="Email Address"
+                  Variant="Variant.Outlined"
+                  InputType="InputType.Email"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="Icons.Material.Filled.Email"
+                  Class="mb-4"
+                  Required="true"
+                  RequiredError="Email is required"
+                  Validation="@(new EmailAddressAttribute() {ErrorMessage = "Invalid email format"})" />
+
+    <MudTextField @bind-Value="loginModel.Password"
+                  For="@(() => loginModel.Password)"
+                  Label="Password"
+                  Variant="Variant.Outlined"
+                  InputType="@(showPassword ? InputType.Text : InputType.Password)"
+                  Adornment="Adornment.End"
+                  AdornmentIcon="@(showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                  OnAdornmentClick="@(() => showPassword = !showPassword)"
+                  Class="mb-4"
+                  Required="true"
+                  RequiredError="Password is required" />
+
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudCheckBox T="string" @bind-Checked="loginModel.RememberMe" 
+                     Label="Remember me" 
+                     Color="Color.Primary" />
+        <MudLink Href="/Account/ForgotPassword" Color="Color.Primary">
+            Forgot Password?
+        </MudLink>
+    </div>
+
+    <MudButton ButtonType="ButtonType.Submit"
+               Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Large"
+               FullWidth="true"
+               Class="mb-4"
+               Disabled="@(!isFormValid || isLoading)"
+               OnClick="HandleLogin">
+        @if (isLoading)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            <span>Signing in...</span>
+        }
+        else
+        {
+            <MudIcon Icon="Icons.Material.Filled.Login" Class="mr-2" />
+            <span>Sign In</span>
+        }
+    </MudButton>
+
+    <MudDivider Class="mb-4">
+        <MudText Typo="Typo.caption" Color="Color.Tertiary">OR</MudText>
+    </MudDivider>
+
+    <div class="d-flex justify-center">
+        <MudText Typo="Typo.body2" Color="Color.Tertiary">
+            Don't have an account?
+            <MudLink Href="/Account/Register" Color="Color.Primary" Class="ml-1">
+                Sign up here
+            </MudLink>
+        </MudText>
+    </div>
+</MudForm>
 
 @code {
+    private MudForm form = new();
+    private LoginViewModel loginModel = new();
+    private bool isFormValid = false;
+    private bool showPassword = false;
+    private bool isLoading = false;
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if user is already authenticated
+        var currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser != null)
+        {
+            var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/";
+            Navigation.NavigateTo(redirectUrl, replace: true);
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        if (!isFormValid) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            loginModel.ReturnUrl = ReturnUrl;
+            await Task.Delay(100);
+            var result = await AuthService.LoginAsync(loginModel);
+
+            if (result.Success)
+            {
+                Snackbar.Add("Login successful! Welcome back.", Severity.Success);
+                
+                var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/";
+                Navigation.NavigateTo(redirectUrl, replace: true);
+            }
+            else
+            {
+                Snackbar.Add(result.Message, Severity.Error);
+                
+                if (result.Errors?.Any() == true)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        Snackbar.Add(error, Severity.Error);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("An unexpected error occurred. Please try again.", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
 }

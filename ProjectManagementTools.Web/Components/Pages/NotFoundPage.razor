@@ -1,5 +1,53 @@
-﻿<h3>NotFoundPage</h3>
+﻿<PageTitle>Page Not Found - ProjectFlow</PageTitle>  
 
-@code {
+<div class="d-flex flex-column align-center justify-center" style="height: 80vh;">  
+    <MudIcon Icon="Icons.Material.Filled.SearchOff"  
+             Size="Size.Large"  
+             Color="Color.Primary"  
+             Style="font-size: 120px;"  
+             Class="mb-6" />  
 
+    <MudText Typo="Typo.h2" Class="mb-4" Color="Color.Primary">  
+        404  
+    </MudText>  
+
+    <MudText Typo="Typo.h4" Class="mb-2">  
+        Page Not Found  
+    </MudText>  
+
+    <MudText Typo="Typo.body1" Color="Color.Tertiary" Class="mb-6" Align="Align.Center">  
+        Sorry, the page you are looking for doesn't exist or has been moved.  
+    </MudText>  
+
+    <div class="d-flex gap-4">  
+        <MudButton Variant="Variant.Filled"  
+                   Color="Color.Primary"  
+                   StartIcon="Icons.Material.Filled.Home"  
+                   Href="/">  
+            Go to Dashboard  
+        </MudButton>  
+
+        <MudButton Variant="Variant.Outlined"  
+                   Color="Color.Primary"  
+                   StartIcon="Icons.Material.Filled.ArrowBack"  
+                   OnClick="@(() => Navigation.NavigateTo(GetRefererOrDefault()))">  
+            Go Back  
+        </MudButton>  
+    </div>  
+
+    <MudDivider Class="my-6" Style="width: 300px;" />  
+
+    <MudText Typo="Typo.caption" Color="Color.Tertiary">  
+        Need help? <MudLink Href="/Help" Color="Color.Primary">Contact Support</MudLink>  
+    </MudText>  
+</div>  
+
+@code {  
+    private string GetRefererOrDefault()  
+    {  
+        // Since NavigationManager does not have a GetReferer method,  
+        // you can implement a custom logic to retrieve the referer URL.  
+        // For now, we return "/" as a fallback.  
+        return "/";  
+    }  
 }

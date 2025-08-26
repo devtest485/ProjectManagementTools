@@ -1,0 +1,343 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using ProjectManagementTools.Core.Entities.Auth
+@using ProjectManagementTools.Core.Interfaces.Services
+@using ProjectManagementTools.Infrastructure.Data
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
+@inject ApplicationDbContext DbContext
+@inject IAuthService AuthService
+@inject IJSRuntime JSRuntime
+@attribute [Authorize]
+
+<PageTitle>Dashboard - ProjectFlow</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <!-- Welcome Section -->
+    <MudPaper Elevation="2" Class="pa-6 mb-6" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="d-flex justify-space-between align-center">
+            <div>
+                <MudText Typo="Typo.h4" Class="mb-2">
+                    Welcome back, @(currentUser?.FirstName ?? "User")! 👋
+                </MudText>
+                <MudText Typo="Typo.body1">
+                    Here's what's happening with your projects today
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="Icons.Material.Filled.Add"
+                       Color="Color.Surface"
+                       Style="color: #667eea;"
+                       Href="/Projects/Create">
+                New Project
+            </MudButton>
+        </div>
+    </MudPaper>
+
+    <!-- Statistics Cards -->
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="3" Style="height: 140px;">
+                <MudCardContent Class="d-flex flex-column justify-center align-center pa-4">
+                    <MudIcon Icon="Icons.Material.Filled.Folder"
+                             Color="Color.Primary"
+                             Size="Size.Large"
+                             Class="mb-2" />
+                    <MudText Typo="Typo.h4" Color="Color.Primary">@dashboardStats.TotalProjects</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Tertiary">Total Projects</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="3" Style="height: 140px;">
+                <MudCardContent Class="d-flex flex-column justify-center align-center pa-4">
+                    <MudIcon Icon="Icons.Material.Filled.Assignment"
+                             Color="Color.Warning"
+                             Size="Size.Large"
+                             Class="mb-2" />
+                    <MudText Typo="Typo.h4" Color="Color.Warning">@dashboardStats.TotalTasks</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Tertiary">Total Tasks</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="3" Style="height: 140px;">
+                <MudCardContent Class="d-flex flex-column justify-center align-center pa-4">
+                    <MudIcon Icon="Icons.Material.Filled.CheckCircle"
+                             Color="Color.Success"
+                             Size="Size.Large"
+                             Class="mb-2" />
+                    <MudText Typo="Typo.h4" Color="Color.Success">@dashboardStats.CompletedTasks</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Tertiary">Completed Tasks</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="3" Style="height: 140px;">
+                <MudCardContent Class="d-flex flex-column justify-center align-center pa-4">
+                    <MudIcon Icon="Icons.Material.Filled.Warning"
+                             Color="Color.Error"
+                             Size="Size.Large"
+                             Class="mb-2" />
+                    <MudText Typo="Typo.h4" Color="Color.Error">@dashboardStats.OverdueTasks</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Tertiary">Overdue Tasks</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <!-- Recent Projects -->
+        <MudItem xs="12" md="8">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Recent Projects</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Size="Size.Small"
+                                   StartIcon="Icons.Material.Filled.ViewList"
+                                   Href="/Projects">
+                            View All
+                        </MudButton>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (recentProjects?.Any() == true)
+                    {
+                        <MudList T="string">
+                            @foreach (var project in recentProjects)
+                            {
+                                <MudListItem>
+                                    <div class="d-flex justify-space-between align-center w-100">
+                                        <div class="d-flex align-center">
+                                            <MudAvatar Color="@GetProjectStatusColor(project.Status)" Size="Size.Medium" Class="mr-3">
+                                                @project.Name.Substring(0, Math.Min(2, project.Name.Length)).ToUpper()
+                                            </MudAvatar>
+                                            <div>
+                                                <MudText Typo="Typo.subtitle1">@project.Name</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Tertiary">
+                                                    @project.Status • @project.Tasks.Count tasks
+                                                </MudText>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <MudProgressLinear Color="Color.Primary"
+                                                               Value="@project.ProgressPercentage"
+                                                               Class="mb-1" />
+                                            <MudText Typo="Typo.caption">@project.ProgressPercentage.ToString("F0")% Complete</MudText>
+                                        </div>
+                                    </div>
+                                </MudListItem>
+                                @if (project != recentProjects.Last())
+                                {
+                                    <MudDivider />
+                                }
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column align-center pa-8">
+                            <MudIcon Icon="Icons.Material.Filled.FolderOpen"
+                                     Size="Size.Large"
+                                     Color="Color.Tertiary"
+                                     Class="mb-4" />
+                            <MudText Typo="Typo.h6" Color="Color.Tertiary" Class="mb-2">No Projects Yet</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Tertiary" Class="mb-4">
+                                Create your first project to get started
+                            </MudText>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="Icons.Material.Filled.Add"
+                                       Href="/Projects/Create">
+                                Create Project
+                            </MudButton>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Quick Actions & Recent Activity -->
+        <MudItem xs="12" md="4">
+            <!-- Quick Actions -->
+            <MudCard Elevation="3" Class="mb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Quick Actions</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudList T="string">
+                        <MudListItem Icon="Icons.Material.Filled.Add"
+                                     IconColor="Color.Primary"
+                                     Href="/Projects/Create">
+                            Create New Project
+                        </MudListItem>
+                        <MudListItem Icon="Icons.Material.Filled.Assignment"
+                                     IconColor="Color.Secondary"
+                                     Href="/Tasks/Create">
+                            Add Task
+                        </MudListItem>
+                        <MudListItem Icon="Icons.Material.Filled.Group"
+                                     IconColor="Color.Tertiary"
+                                     Href="/Team">
+                            Manage Team
+                        </MudListItem>
+                        <MudListItem Icon="Icons.Material.Filled.Assessment"
+                                     IconColor="Color.Info"
+                                     Href="/Reports">
+                            View Reports
+                        </MudListItem>
+                    </MudList>
+                </MudCardContent>
+            </MudCard>
+
+            <!-- Activity Feed -->
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Recent Activity</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (recentActivities?.Any() == true)
+                    {
+                        <MudTimeline TimelinePosition="TimelinePosition.Start">
+                            @foreach (var activity in recentActivities.Take(5))
+                            {
+                                <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                    <MudText Typo="Typo.body2">@activity.Description</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Tertiary">
+                                        @activity.CreatedAt.ToString("MMM dd, HH:mm")
+                                    </MudText>
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column align-center pa-4">
+                            <MudIcon Icon="Icons.Material.Filled.Timeline"
+                                     Color="Color.Tertiary"
+                                     Class="mb-2" />
+                            <MudText Typo="Typo.body2" Color="Color.Tertiary">No recent activity</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private ApplicationUser? currentUser;
+    private DashboardStats dashboardStats = new();
+    private List<ProjectSummary> recentProjects = new();
+    private List<ActivitySummary> recentActivities = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        if (currentUser != null)
+        {
+            await LoadDashboardData();
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Load dashboard statistics
+            var projects = await DbContext.Projects
+                .Include(p => p.Tasks)
+                .Include(p => p.Owners)
+                .Where(p => p.Owners.Any(o => o.UserId == currentUser!.Id && o.IsActive))
+                .ToListAsync();
+
+            dashboardStats = new DashboardStats
+            {
+                TotalProjects = projects.Count,
+                TotalTasks = projects.SelectMany(p => p.Tasks).Count(),
+                CompletedTasks = projects.SelectMany(p => p.Tasks)
+                    .Count(t => t.Status == ProjectManagementTools.Core.Enums.TaskStatus.Done),
+                OverdueTasks = projects.SelectMany(p => p.Tasks)
+                    .Count(t => t.EndDate < DateTime.UtcNow &&
+                              t.Status != ProjectManagementTools.Core.Enums.TaskStatus.Done)
+            };
+
+            // Load recent projects
+            recentProjects = projects
+                .OrderByDescending(p => p.UpdatedDate ?? p.CreatedDate)
+                .Take(5)
+                .Select(p => new ProjectSummary
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Status = p.Status,
+                    ProgressPercentage = (double)p.ProgressPercentage,
+                    Tasks = p.Tasks.ToList()
+                })
+                .ToList();
+
+            // Load recent activities
+            recentActivities = await DbContext.ActivityLogs
+                .Where(a => a.UserId == currentUser!.Id ||
+                           (a.ProjectId.HasValue && projects.Any(p => p.Id == a.ProjectId)))
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(10)
+                .Select(a => new ActivitySummary
+                {
+                    Description = a.Description,
+                    CreatedAt = a.CreatedAt
+                })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error and show friendly message
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private Color GetProjectStatusColor(ProjectManagementTools.Core.Enums.ProjectStatus status)
+    {
+        return status switch
+        {
+            ProjectManagementTools.Core.Enums.ProjectStatus.Planning => Color.Warning,
+            ProjectManagementTools.Core.Enums.ProjectStatus.Active => Color.Success,
+            ProjectManagementTools.Core.Enums.ProjectStatus.OnHold => Color.Warning,
+            ProjectManagementTools.Core.Enums.ProjectStatus.Completed => Color.Success,
+            ProjectManagementTools.Core.Enums.ProjectStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    public class DashboardStats
+    {
+        public int TotalProjects { get; set; }
+        public int TotalTasks { get; set; }
+        public int CompletedTasks { get; set; }
+        public int OverdueTasks { get; set; }
+    }
+
+    public class ProjectSummary
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public ProjectManagementTools.Core.Enums.ProjectStatus Status { get; set; }
+        public double ProgressPercentage { get; set; }
+        public List<ProjectManagementTools.Core.Entities.TaskItem> Tasks { get; set; } = new();
+    }
+
+    public class ActivitySummary
+    {
+        public string Description { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+}

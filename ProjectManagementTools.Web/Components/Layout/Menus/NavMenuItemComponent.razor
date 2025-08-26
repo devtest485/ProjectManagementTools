@@ -1,0 +1,13 @@
+﻿<MudNavLink Href="@Href"
+            Match="@(Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)"
+            Class="@GetNavLinkClass()">
+    <div class="nav-link-content">
+        <MudIcon Icon="@Icon" Size="Size.Small" Class="nav-icon" />
+        <span class="nav-text">@Text</span>
+
+        @if (Badge > 0)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Error" Class="nav-badge">@Badge</MudChip>
+        }
+    </div>
+</MudNavLink>

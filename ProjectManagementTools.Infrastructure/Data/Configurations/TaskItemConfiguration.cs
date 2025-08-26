@@ -82,17 +82,17 @@ namespace ProjectManagementTools.Infrastructure.Data.Configurations
             builder.HasMany(t => t.Comments)
                 .WithOne(c => c.Task)
                 .HasForeignKey(c => c.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); ;
 
             builder.HasMany(t => t.Attachments)
                 .WithOne(a => a.Task)
                 .HasForeignKey(a => a.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(t => t.TimeLogs)
                 .WithOne(tl => tl.Task)
                 .HasForeignKey(tl => tl.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(t => t.DirectSubTasks)
                 .WithOne(st => st.Task)

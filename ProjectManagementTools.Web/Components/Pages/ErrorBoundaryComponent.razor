@@ -1,0 +1,59 @@
+﻿@inherits ErrorBoundaryBase;
+@inject ILogger<ErrorBoundaryComponent> Logger;
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else
+{
+    <div class="error-container">
+        <div class="error-content">
+            <MudCard Class="error-card">
+                <MudCardContent Class="error-card-content">
+                    <!-- Error Icon -->
+                    <div class="error-icon">
+                        <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Large" Color="Color.Error" />
+                    </div>
+                    <!-- Error Message -->
+                    <MudText Typo="Typo.h5" Class="error-title">
+
+                        Oops! Something went wrong
+                    </MudText>
+                    <MudText Typo="Typo.body1" Class="error-message">
+                        We're sorry, but an unexpected error occurred. Our team has been notified and is working on a fix.
+                    </MudText>
+                    @if (ShowDetails)
+                    {
+                        <MudExpansionPanels Elevation="0" Class="error-details">
+                            <MudExpansionPanel Text="Error Details">
+                                <div class="error-details-content">
+                                    <MudText Typo="Typo.caption" Class="error-exception">
+                                        @CurrentException?.Message
+                                    </MudText>
+                                    @if (ShowStackTrace && !string.IsNullOrEmpty(CurrentException?.StackTrace))
+                                    {
+                                        <MudDivider Class="error-divider" />
+                                        <MudText Typo="Typo.caption" Class="error-stack">
+                                            @CurrentException.StackTrace
+                                        </MudText>
+                                    }
+                                </div>
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                    }
+                    <!-- Action Buttons -->
+                    <div class="error-actions">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Recover" StartIcon="@Icons.Material.Filled.Refresh" Class="error-btn">
+
+                            Try Again
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/" StartIcon="@Icons.Material.Filled.Home" Class="error-btn">
+                            Go Home
+                        </MudButton>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </div>
+    </div>
+}

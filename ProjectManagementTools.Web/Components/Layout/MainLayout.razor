@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject IAuthService AuthService
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -6,61 +7,146 @@
 
 <MudLayout>
     <!-- App Bar -->
-    <MudAppBar Elevation="1" Class="main-app-bar">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="Icons.Material.Filled.Menu"
                        Color="Color.Inherit"
-                       OnClick="@ToggleDrawer" />
+                       Edge="Edge.Start"
+                       OnClick="@((e) => DrawerToggle())" />
 
-        <MudText Typo="Typo.h6" Class="app-title">
+        <MudText Typo="Typo.h6" Class="ml-3">
+            <MudIcon Icon="Icons.Material.Filled.Dashboard" Class="mr-2" />
             ProjectFlow
         </MudText>
 
         <MudSpacer />
 
-        <!-- Search -->
-        <MudTextField @bind-Value="searchText"
+        <!-- Search Box -->
+        <MudTextField @bind-Value="searchTerm"
                       Placeholder="Search projects, tasks..."
                       Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      IconSize="Size.Medium"
-                      Class="search-field"
+                      AdornmentIcon="Icons.Material.Filled.Search"
                       Variant="Variant.Outlined"
-                      Margin="Margin.Dense" />
+                      Margin="Margin.Dense"
+                      Class="mr-4"
+                      Style="background-color: rgba(255,255,255,0.1); border-radius: 4px;"
+                      @onkeypress="HandleSearchKeyPress" />
 
         <!-- Notifications -->
-        <MudIconButton Icon="@Icons.Material.Filled.Notifications"
-                       Color="Color.Inherit"
-                       Class="notification-btn" />
+        <MudBadge Content="@notificationCount"
+                  Color="Color.Error"
+                  Overlap="true"
+                  Visible="@(notificationCount > 0)"
+                  Class="mr-2">
+            <MudIconButton Icon="Icons.Material.Filled.Notifications"
+                           Color="Color.Inherit"
+                           OnClick="@((e) => ShowNotifications())" />
+        </MudBadge>
 
         <!-- User Menu -->
-        <NavMenu />
+        <MudMenu Icon="Icons.Material.Filled.AccountCircle"
+                 Color="Color.Inherit"
+                 Direction="Direction.Bottom"
+                 OffsetY="true">
+            <div class="d-flex flex-column pa-4" style="min-width: 250px;">
+                <div class="d-flex align-center mb-3">
+                    <MudAvatar Color="Color.Secondary" Size="Size.Medium" Class="mr-3">
+                        @(currentUser?.Initials ?? "UN")
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.subtitle1">@(currentUser?.FullName ?? "Unknown User")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">@(currentUser?.Email)</MudText>
+                    </div>
+                </div>
+
+                <MudDivider Class="mb-2" />
+
+                <MudMenuItem Icon="Icons.Material.Filled.Person"
+                             OnClick="@(() => Navigation.NavigateTo("/Profile"))">
+                    Profile Settings
+                </MudMenuItem>
+                <MudMenuItem Icon="Icons.Material.Filled.Settings"
+                             OnClick="@(() => Navigation.NavigateTo("/Settings"))">
+                    Preferences
+                </MudMenuItem>
+                <MudMenuItem Icon="Icons.Material.Filled.Help"
+                             OnClick="@(() => Navigation.NavigateTo("/Help"))">
+                    Help & Support
+                </MudMenuItem>
+
+                <MudDivider Class="my-2" />
+
+                <MudMenuItem Icon="Icons.Material.Filled.Logout"
+                             OnClick="HandleLogout">
+                    Sign Out
+                </MudMenuItem>
+            </div>
+        </MudMenu>
     </MudAppBar>
 
     <!-- Navigation Drawer -->
-    <MudDrawer @bind-Open="@drawerOpen"
+    <MudDrawer @bind-Open="drawerOpen"
                Elevation="2"
-               Variant="@DrawerVariant.Mini"
-               OpenMiniOnHover="true"
                ClipMode="DrawerClipMode.Always">
-        <NavMenu />
+        <MudDrawerHeader>
+            <div class="d-flex align-center">
+                <MudAvatar Color="Color.Primary" Size="Size.Small" Class="mr-3">
+                    <MudIcon Icon="Icons.Material.Filled.Dashboard" />
+                </MudAvatar>
+                <MudText Typo="Typo.h6">Menu</MudText>
+            </div>
+        </MudDrawerHeader>
+
+        <NavMenuComponent />
     </MudDrawer>
 
     <!-- Main Content -->
-    <MudMainContent Class="main-content">
-        <div class="content-wrapper">
-            @* <ErrorBoundaryComponent> *@
+    <MudMainContent>
+        <div style="padding: 24px; min-height: calc(100vh - 64px);">
             @Body
-            @* </ErrorBoundaryComponent> *@
         </div>
     </MudMainContent>
 </MudLayout>
 
 @code {
     private bool drawerOpen = true;
-    private string searchText = "";
-    
-    private void ToggleDrawer()
+    private string searchTerm = string.Empty;
+    private ApplicationUser? currentUser;
+    private int notificationCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUserAsync();
+        // Load notification count
+        await LoadNotificationCount();
+    }
+
+    private void DrawerToggle()
     {
         drawerOpen = !drawerOpen;
+    }
+
+    private async Task HandleSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(searchTerm))
+        {
+            Navigation.NavigateTo($"/Search?q={Uri.EscapeDataString(searchTerm)}");
+        }
+    }
+
+    private void ShowNotifications()
+    {
+        Navigation.NavigateTo("/Notifications");
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/Account/Login", replace: true);
+    }
+
+    private async Task LoadNotificationCount()
+    {
+        // TODO: Implement notification count loading
+        notificationCount = 3; // Placeholder
     }
 }

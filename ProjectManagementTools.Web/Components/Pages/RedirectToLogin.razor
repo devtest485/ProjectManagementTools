@@ -1,5 +1,14 @@
-﻿<h3>RedirectToLogin</h3>
-
-@code {
-
-}
+﻿<div class="redirect-container">
+    <div class="redirect-content">
+        <div class="redirect-icon">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Primary" />
+        </div>
+        <MudText Typo="Typo.h5" Class="redirect-title">
+            Authentication Required
+        </MudText>
+        <MudText Typo="Typo.body1" Class="redirect-message">
+            Redirecting you to the login page...
+        </MudText>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="redirect-progress" />
+    </div>
+</div>

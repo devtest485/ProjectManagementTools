@@ -1,0 +1,192 @@
+﻿@page "/Account/Register"
+@layout AuthLayout
+@rendermode InteractiveServer
+
+<PageTitle>Register - ProjectFlow</PageTitle>
+
+<MudForm @ref="form" @bind-IsValid="@isFormValid" Model="@registerModel">
+    <MudText Typo="Typo.h5" Align="Align.Center" GutterBottom="true" Color="Color.Primary">
+        Create Your Account
+    </MudText>
+    <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-6" Color="Color.Tertiary">
+        Join ProjectFlow and start managing your projects efficiently
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="registerModel.FirstName"
+                          For="@(() => registerModel.FirstName)"
+                          Label="First Name"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="Icons.Material.Filled.Person"
+                          Required="true"
+                          RequiredError="First name is required" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="registerModel.LastName"
+                          For="@(() => registerModel.LastName)"
+                          Label="Last Name"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Last name is required" />
+        </MudItem>
+    </MudGrid>
+
+    <MudTextField @bind-Value="registerModel.Email"
+                  For="@(() => registerModel.Email)"
+                  Label="Email Address"
+                  Variant="Variant.Outlined"
+                  InputType="InputType.Email"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="Icons.Material.Filled.Email"
+                  Class="mb-4"
+                  Required="true"
+                  RequiredError="Email is required"
+                  Validation="@(new EmailAddressAttribute() { ErrorMessage = "Invalid email format" })" />
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="registerModel.Position"
+                          Label="Position (Optional)"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="Icons.Material.Filled.Work" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="registerModel.Department"
+                          Label="Department (Optional)"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="Icons.Material.Filled.BusinessCenter" />
+        </MudItem>
+    </MudGrid>
+
+    <MudTextField @bind-Value="registerModel.Company"
+                  Label="Company (Optional)"
+                  Variant="Variant.Outlined"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="Icons.Material.Filled.Business"
+                  Class="mb-4" />
+
+    <MudTextField @bind-Value="registerModel.Password"
+                  For="@(() => registerModel.Password)"
+                  Label="Password"
+                  Variant="Variant.Outlined"
+                  InputType="@(showPassword? InputType.Text: InputType.Password)"
+                  Adornment="Adornment.End"
+                  AdornmentIcon="@(showPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                  OnAdornmentClick="@(() => showPassword = !showPassword)"
+                  Class="mb-4"
+                  Required="true"
+                  RequiredError="Password is required" />
+
+    <MudTextField @bind-Value="registerModel.ConfirmPassword"
+                  For="@(() => registerModel.ConfirmPassword)"
+                  Label="Confirm Password"
+                  Variant="Variant.Outlined"
+                  InputType="@(showConfirmPassword? InputType.Text: InputType.Password)"
+                  Adornment="Adornment.End"
+                  AdornmentIcon="@(showConfirmPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                  OnAdornmentClick="@(() => showConfirmPassword = !showConfirmPassword)"
+                  Class="mb-4"
+                  Required="true"
+                  RequiredError="Password confirmation is required" />
+
+    <div class="mb-4">
+        <MudCheckBox T="string" @bind-Checked="registerModel.AcceptTerms"
+                     Color="Color.Primary"
+                     Required="true">
+            <MudText Typo="Typo.body2">
+                I agree to the
+                <MudLink Href="/Terms" Color="Color.Primary" Target="_blank">Terms of Service</MudLink>
+                and
+                <MudLink Href="/Privacy" Color="Color.Primary" Target="_blank">Privacy Policy</MudLink>
+            </MudText>
+        </MudCheckBox>
+    </div>
+
+    <MudButton ButtonType="ButtonType.Submit"
+               Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Large"
+               FullWidth="true"
+               Class="mb-4"
+               Disabled="@(!isFormValid || !registerModel.AcceptTerms || isLoading)"
+               OnClick="HandleRegister">
+        @if (isLoading)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            <span>Creating Account...</span>
+        }
+        else
+        {
+            <MudIcon Icon="Icons.Material.Filled.PersonAdd" Class="mr-2" />
+            <span>Create Account</span>
+        }
+    </MudButton>
+
+    <MudDivider Class="mb-4">
+        <MudText Typo="Typo.caption" Color="Color.Tertiary">OR</MudText>
+    </MudDivider>
+
+    <div class="d-flex justify-center">
+        <MudText Typo="Typo.body2" Color="Color.Tertiary">
+            Already have an account?
+            <MudLink Href="/Account/Login" Color="Color.Primary" Class="ml-1">
+                Sign in here
+            </MudLink>
+        </MudText>
+    </div>
+</MudForm>
+
+@code {
+    private MudForm form = new();
+    private RegisterViewModel registerModel = new();
+    private bool isFormValid = false;
+    private bool showPassword = false;
+    private bool showConfirmPassword = false;
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        if (!isFormValid || !registerModel.AcceptTerms) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AuthService.RegisterAsync(registerModel);
+
+            if (result.Success)
+            {
+                Snackbar.Add("Account created successfully! Please check your email for confirmation.", Severity.Success);
+                Navigation.NavigateTo("/Account/Login", replace: true);
+            }
+            else
+            {
+                Snackbar.Add(result.Message, Severity.Error);
+
+                if (result.Errors?.Any() == true)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        Snackbar.Add(error, Severity.Error);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("An unexpected error occurred. Please try again.", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

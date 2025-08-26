@@ -1,0 +1,33 @@
+﻿<div class="@CssClass">
+    <AuthorizeView>
+        <Authorized>
+            @if (!string.IsNullOrEmpty(AvatarUrl))
+            {
+                <MudAvatar Size="@Size" Class="@AvatarClass">
+                    <MudImage Src="@AvatarUrl" Alt="@($"{FirstName} {LastName}")" />
+                </MudAvatar>
+            }
+            else
+            {
+                <MudAvatar Size="@Size" Color="@Color" Class="@AvatarClass">
+                    @Initials
+                </MudAvatar>
+            }
+            @if (ShowName)
+            {
+                <div class="user-name-container">
+                    <MudText Typo="Typo.body2" Class="user-full-name">@FullName</MudText>
+                    @if (ShowEmail)
+                    {
+                        <MudText Typo="Typo.caption" Class="user-email">@Email</MudText>
+                    }
+                </div>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <MudAvatar Size="@Size" Color="Color.Default" Class="@AvatarClass">
+                <MudIcon Icon="@Icons.Material.Filled.Person" />
+            </MudAvatar>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>

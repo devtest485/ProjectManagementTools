@@ -1,0 +1,169 @@
+﻿@using MudBlazor
+@inject NavigationManager Navigation
+
+<MudNavMenu>
+    <!-- Dashboard -->
+    <MudNavLink Href="/"
+                Match="NavLinkMatch.All"
+                Icon="Icons.Material.Filled.Dashboard">
+        Dashboard
+    </MudNavLink>
+
+    <!-- Projects Section -->
+    <MudNavGroup Text="Projects"
+                 Icon="Icons.Material.Filled.Folder"
+                 Expanded="true">
+        <MudNavLink Href="/Projects"
+                    Icon="Icons.Material.Filled.List">
+            All Projects
+        </MudNavLink>
+        <MudNavLink Href="/Projects/Create"
+                    Icon="Icons.Material.Filled.Add">
+            Create Project
+        </MudNavLink>
+        <MudNavLink Href="/Projects/Archived"
+                    Icon="Icons.Material.Filled.Archive">
+            Archived
+        </MudNavLink>
+    </MudNavGroup>
+
+    <!-- Tasks Section -->
+    <MudNavGroup Text="Tasks"
+                 Icon="Icons.Material.Filled.Assignment">
+        <MudNavLink Href="/Tasks"
+                    Icon="Icons.Material.Filled.List">
+            All Tasks
+        </MudNavLink>
+        <MudNavLink Href="/Tasks/MyTasks"
+                    Icon="Icons.Material.Filled.Person">
+            My Tasks
+        </MudNavLink>
+        <MudNavLink Href="/Tasks/Create"
+                    Icon="Icons.Material.Filled.Add">
+            Create Task
+        </MudNavLink>
+        <MudNavLink Href="/Tasks/Overdue"
+                    Icon="Icons.Material.Filled.Warning"
+                    IconColor="Color.Error">
+            Overdue Tasks
+        </MudNavLink>
+    </MudNavGroup>
+
+    <!-- Sprints Section -->
+    <MudNavGroup Text="Sprints"
+                 Icon="Icons.Material.Filled.DirectionsRun">
+        <MudNavLink Href="/Sprints"
+                    Icon="Icons.Material.Filled.List">
+            All Sprints
+        </MudNavLink>
+        <MudNavLink Href="/Sprints/Active"
+                    Icon="Icons.Material.Filled.PlayArrow"
+                    IconColor="Color.Success">
+            Active Sprints
+        </MudNavLink>
+        <MudNavLink Href="/Sprints/Create"
+                    Icon="Icons.Material.Filled.Add">
+            Create Sprint
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudDivider Class="my-2" />
+
+    <!-- Team & Collaboration -->
+    <MudNavLink Href="/Team"
+                Icon="Icons.Material.Filled.Group">
+        Team Members
+    </MudNavLink>
+
+    <MudNavLink Href="/TimeTracking"
+                Icon="Icons.Material.Filled.AccessTime">
+        Time Tracking
+    </MudNavLink>
+
+    <MudNavLink Href="/Calendar"
+                Icon="Icons.Material.Filled.CalendarToday">
+        Calendar
+    </MudNavLink>
+
+    <MudDivider Class="my-2" />
+
+    <!-- Reports & Analytics -->
+    <MudNavGroup Text="Reports"
+                 Icon="Icons.Material.Filled.Assessment">
+        <MudNavLink Href="/Reports/Overview"
+                    Icon="Icons.Material.Filled.BarChart">
+            Overview
+        </MudNavLink>
+        <MudNavLink Href="/Reports/Projects"
+                    Icon="Icons.Material.Filled.TrendingUp">
+            Project Reports
+        </MudNavLink>
+        <MudNavLink Href="/Reports/Performance"
+                    Icon="Icons.Material.Filled.Speed">
+            Performance
+        </MudNavLink>
+        <MudNavLink Href="/Reports/TimeSheets"
+                    Icon="Icons.Material.Filled.Schedule">
+            Time Sheets
+        </MudNavLink>
+    </MudNavGroup>
+
+    <MudDivider Class="my-2" />
+
+    <!-- Settings & Admin -->
+    <MudNavGroup Text="Settings"
+                 Icon="Icons.Material.Filled.Settings">
+        <MudNavLink Href="/Settings/Profile"
+                    Icon="Icons.Material.Filled.Person">
+            Profile
+        </MudNavLink>
+        <MudNavLink Href="/Settings/Preferences"
+                    Icon="Icons.Material.Filled.Tune">
+            Preferences
+        </MudNavLink>
+        <MudNavLink Href="/Settings/Notifications"
+                    Icon="Icons.Material.Filled.Notifications">
+            Notifications
+        </MudNavLink>
+    </MudNavGroup>
+
+    <!-- Admin Section (only for admins) -->
+    <AuthorizeView Roles="Admin,ProjectOwner">
+        <Authorized>
+            <MudDivider Class="my-2" />
+            <MudNavGroup Text="Administration"
+                         Icon="Icons.Material.Filled.AdminPanelSettings"
+                         IconColor="Color.Warning">
+                <MudNavLink Href="/Admin/Users"
+                            Icon="Icons.Material.Filled.SupervisorAccount">
+                    Manage Users
+                </MudNavLink>
+                <MudNavLink Href="/Admin/Roles"
+                            Icon="Icons.Material.Filled.Security">
+                    Roles & Permissions
+                </MudNavLink>
+                <MudNavLink Href="/Admin/SystemLogs"
+                            Icon="Icons.Material.Filled.History">
+                    System Logs
+                </MudNavLink>
+                <MudNavLink Href="/Admin/Backup"
+                            Icon="Icons.Material.Filled.Backup">
+                    Backup & Restore
+                </MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudDivider Class="my-2" />
+
+    <!-- Help & Support -->
+    <MudNavLink Href="/Help"
+                Icon="Icons.Material.Filled.Help">
+        Help & Support
+    </MudNavLink>
+
+    <MudNavLink Href="/About"
+                Icon="Icons.Material.Filled.Info">
+        About
+    </MudNavLink>
+</MudNavMenu>

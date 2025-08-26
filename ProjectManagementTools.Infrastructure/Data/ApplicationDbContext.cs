@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using ProjectManagementTools.Core.Entities;
 using ProjectManagementTools.Core.Entities.Auth;
 using ProjectManagementTools.Core.Entities.Projects;
@@ -38,19 +37,45 @@ namespace ProjectManagementTools.Infrastructure.Data
         // Audit & Tracking
         public DbSet<ActivityLog> ActivityLogs { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Apply all configurations
+            // Apply all configurations from assembly FIRST
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             // Additional configurations
             ConfigureIdentityTables(builder);
             ConfigureGlobalFilters(builder);
             ConfigureIndexes(builder);
-            SeedData(builder);
+
+            // THEN fix cascade delete conflicts (this will override the configurations)
+            foreach (var relationship in builder.Model.GetEntityTypes()
+                .SelectMany(e => e.GetForeignKeys()))
+            {
+                relationship.DeleteBehavior = DeleteBehavior.Restrict;
+            }
+
+            // Finally, explicitly set the ones you want to cascade
+            builder.Entity<Project>()
+                .HasMany(p => p.Tasks)
+                .WithOne(t => t.Project)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<TaskItem>()
+                .HasMany(t => t.DirectSubTasks)
+                .WithOne(st => st.Task)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Project>()
+                .HasMany(p => p.Sprints)
+                .WithOne(s => s.Project)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Project>()
+                .HasMany(p => p.Owners)
+                .WithOne(po => po.Project)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         private static void ConfigureIdentityTables(ModelBuilder builder)
@@ -63,11 +88,47 @@ namespace ProjectManagementTools.Infrastructure.Data
             builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins");
             builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
             builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
+
+            // Configure ApplicationUser additional properties
+            builder.Entity<ApplicationUser>(entity =>
+            {
+                entity.Property(e => e.FirstName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.LastName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Bio)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.Position)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Department)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Company)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.TimeZone)
+                    .HasMaxLength(50)
+                    .HasDefaultValue("UTC");
+
+                entity.Property(e => e.AvatarUrl)
+                    .HasMaxLength(500);
+
+                // Index for performance
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.LastLoginDate);
+            });
         }
 
         private static void ConfigureGlobalFilters(ModelBuilder builder)
         {
-            // Global query filters for soft delete
+            // Global query filters for soft delete (already configured in individual configurations)
+            // These are here as backup/additional filters
             builder.Entity<Project>().HasQueryFilter(p => !p.IsDeleted);
             builder.Entity<TaskItem>().HasQueryFilter(t => !t.IsDeleted);
             builder.Entity<SubTask>().HasQueryFilter(st => !st.IsDeleted);
@@ -83,7 +144,12 @@ namespace ProjectManagementTools.Infrastructure.Data
         {
             // Performance indexes
             builder.Entity<Project>()
-                .HasIndex(p => new { p.Status, p.IsArchived });
+                .HasIndex(p => new { p.Status, p.IsArchived })
+                .HasDatabaseName("IX_Projects_Status_Archived");
+
+            builder.Entity<Project>()
+                .HasIndex(p => p.CreatedDate)
+                .HasDatabaseName("IX_Projects_CreatedDate");
 
             builder.Entity<TaskItem>()
                 .HasIndex(t => new { t.Status, t.Priority })
@@ -92,6 +158,10 @@ namespace ProjectManagementTools.Infrastructure.Data
             builder.Entity<TaskItem>()
                 .HasIndex(t => new { t.ProjectId, t.SprintId })
                 .HasDatabaseName("IX_Tasks_Project_Sprint");
+
+            builder.Entity<TaskItem>()
+                .HasIndex(t => t.EndDate)
+                .HasDatabaseName("IX_Tasks_EndDate");
 
             builder.Entity<SubTask>()
                 .HasIndex(st => new { st.TaskId, st.Status })
@@ -105,50 +175,24 @@ namespace ProjectManagementTools.Infrastructure.Data
                 .HasIndex(al => new { al.ProjectId, al.CreatedAt })
                 .HasDatabaseName("IX_ActivityLogs_Project_Date");
 
+            builder.Entity<ActivityLog>()
+                .HasIndex(al => new { al.UserId, al.CreatedAt })
+                .HasDatabaseName("IX_ActivityLogs_User_Date");
+
             builder.Entity<Notification>()
                 .HasIndex(n => new { n.UserId, n.IsRead })
                 .HasDatabaseName("IX_Notifications_User_Read");
+
+            builder.Entity<Sprint>()
+                .HasIndex(s => new { s.ProjectId, s.Status })
+                .HasDatabaseName("IX_Sprints_Project_Status");
+
+            builder.Entity<Comment>()
+                .HasIndex(c => c.ParentCommentId)
+                .HasDatabaseName("IX_Comments_Parent");
         }
 
-        private static void SeedData(ModelBuilder builder)
-        {
-            // Seed default roles
-            var adminRoleId = Guid.NewGuid();
-            var projectOwnerRoleId = Guid.NewGuid();
-            var memberRoleId = Guid.NewGuid();
-            var viewerRoleId = Guid.NewGuid();
-
-            builder.Entity<IdentityRole<Guid>>().HasData(
-                new IdentityRole<Guid>
-                {
-                    Id = adminRoleId,
-                    Name = "Admin",
-                    NormalizedName = "ADMIN",
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                },
-                new IdentityRole<Guid>
-                {
-                    Id = projectOwnerRoleId,
-                    Name = "ProjectOwner",
-                    NormalizedName = "PROJECTOWNER",
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                },
-                new IdentityRole<Guid>
-                {
-                    Id = memberRoleId,
-                    Name = "Member",
-                    NormalizedName = "MEMBER",
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                },
-                new IdentityRole<Guid>
-                {
-                    Id = viewerRoleId,
-                    Name = "Viewer",
-                    NormalizedName = "VIEWER",
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                }
-            );
-        }
+        // Remove the SeedData method - we'll handle seeding in Program.cs instead
 
         // Override SaveChanges to handle audit trails
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

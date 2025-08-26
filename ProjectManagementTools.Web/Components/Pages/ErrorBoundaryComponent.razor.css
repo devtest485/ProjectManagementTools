@@ -1,0 +1,93 @@
+﻿.error-container {
+    min-height: 50vh;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem 1rem;
+}
+
+.error-content {
+    max-width: 32rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.error-card {
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.error-card-content {
+    padding: 2rem;
+    text-align: center;
+}
+
+.error-icon {
+    width: 4rem;
+    height: 4rem;
+    background-color: #fee2e2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.error-title {
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 1rem;
+}
+
+.error-message {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.error-details {
+    margin-bottom: 1.5rem;
+}
+
+.error-details-content {
+    text-align: left;
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.error-exception {
+    font-family: 'Courier New', monospace;
+    color: #dc2626;
+    word-break: break-word;
+}
+
+.error-divider {
+    margin: 0.5rem 0;
+}
+
+.error-stack {
+    font-family: 'Courier New', monospace;
+    color: #6b7280;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.error-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.error-btn {
+    border-radius: 0.75rem;
+}
+
+@@media (min-width: 640px) {
+    .error-actions {
+        flex-direction: row;
+        gap: 0.75rem;
+    }
+}

@@ -1,0 +1,22 @@
+﻿
+.mud-nav-link {
+    border-radius: 8px;
+    margin: 2px 8px;
+}
+
+    .mud-nav-link:hover {
+        background-color: var(--mud-palette-action-hover);
+    }
+
+    .mud-nav-link.mud-nav-link-active {
+        background-color: var(--mud-palette-primary);
+        color: white;
+    }
+
+.mud-nav-group {
+    margin: 4px 0;
+}
+
+    .mud-nav-group .mud-nav-link {
+        padding-left: 48px;
+    }

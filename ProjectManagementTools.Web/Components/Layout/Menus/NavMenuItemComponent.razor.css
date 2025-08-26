@@ -1,0 +1,44 @@
+﻿.nav-link-content {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #6c757d;
+    text-decoration: none;
+}
+
+.nav-icon {
+    margin-right: 0.75rem;
+    min-width: 1.25rem;
+}
+
+.nav-text {
+    flex: 1;
+}
+
+.nav-badge {
+    margin-left: auto;
+    height: 1.25rem;
+    font-size: 0.75rem;
+}
+
+/* Active state */
+.nav-link-active .nav-link-content {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-right: 3px solid #1976d2;
+}
+
+/* Hover state */
+.nav-link-content:hover {
+    background-color: #f5f5f5;
+    color: #495057;
+}
+
+.nav-link-active .nav-link-content:hover {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}

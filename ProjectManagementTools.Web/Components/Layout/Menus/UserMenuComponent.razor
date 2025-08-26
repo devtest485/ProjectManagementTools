@@ -1,0 +1,55 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <!-- User Menu -->
+        <MudMenu>
+            <ActivatorContent>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Inherit"
+                           StartIcon="@Icons.Material.Filled.AccountCircle"
+                           Class="user-menu-button">
+                    <div class="user-info">
+                        <UserAvatarComponent Size="Size.Small" ShowName="false" />
+                        <span class="user-name">@GetUserName()</span>
+                    </div>
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Icon="@Icons.Material.Filled.Person"
+                             Href="/account/profile">
+                    My Profile
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard"
+                             Href="/dashboard">
+                    Dashboard
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings"
+                             Href="/settings">
+                    Settings
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                             OnClick="@HandleLogout"
+                             Class="logout-item">
+                    Sign Out
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+    </Authorized>
+    <NotAuthorized>
+        <!-- Login/Register Buttons -->
+        <div class="auth-buttons">
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Inherit"
+                       Href="/account/login"
+                       Class="auth-btn">
+                Sign In
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       Href="/account/register"
+                       Class="auth-btn register-btn">
+                Get Started
+            </MudButton>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

@@ -1,0 +1,13 @@
+﻿.user-name-container {
+    margin-left: 0.5rem;
+}
+
+.user-full-name {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.user-email {
+    color: #6b7280;
+    line-height: 1.2;
+}
