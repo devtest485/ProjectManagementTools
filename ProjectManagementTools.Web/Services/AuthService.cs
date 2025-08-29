@@ -1,11 +1,11 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using ProjectManagementTools.Core.DTOs;
 using ProjectManagementTools.Core.Entities.Auth;
 using ProjectManagementTools.Core.Interfaces.Services;
 using ProjectManagementTools.Core.ResponseObject;
+using AutoMapper;
 
-namespace ProjectManagementTools.Infrastructure.Services
+namespace ProjectManagementTools.Web.Services
 {
     public class AuthService : IAuthService
     {
@@ -251,13 +251,29 @@ namespace ProjectManagementTools.Infrastructure.Services
 
         public async Task<ApplicationUser?> GetCurrentUserAsync()
         {
-            return await _userManager.GetUserAsync(_signInManager.Context.User);
+            try
+            {
+                return await _userManager.GetUserAsync(_signInManager.Context.User);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting current user");
+                return null;
+            }
         }
 
         public async Task<UserProfileViewModel?> GetUserProfileAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            return user != null ? _mapper.Map<UserProfileViewModel>(user) : null;
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                return user != null ? _mapper.Map<UserProfileViewModel>(user) : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user profile for {UserId}", userId);
+                return null;
+            }
         }
 
         public async Task<AuthResult> UpdateProfileAsync(UserProfileViewModel model)
@@ -358,13 +374,29 @@ namespace ProjectManagementTools.Infrastructure.Services
 
         public async Task LogoutAsync()
         {
-            await _signInManager.SignOutAsync();
+            try
+            {
+                await _signInManager.SignOutAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout");
+                throw;
+            }
         }
 
         public async Task<bool> IsEmailConfirmedAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            return user?.EmailConfirmed ?? false;
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                return user?.EmailConfirmed ?? false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking email confirmation for user {UserId}", userId);
+                return false;
+            }
         }
 
         public async Task<AuthResult> ResendEmailConfirmationAsync(string email)
@@ -410,5 +442,4 @@ namespace ProjectManagementTools.Infrastructure.Services
             }
         }
     }
-
 }

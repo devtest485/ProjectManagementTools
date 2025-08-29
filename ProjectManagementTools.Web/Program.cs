@@ -5,7 +5,6 @@ using ProjectManagementTools.Core.DTOs;
 using ProjectManagementTools.Core.Entities.Auth;
 using ProjectManagementTools.Core.Interfaces.Services;
 using ProjectManagementTools.Infrastructure.Data;
-using ProjectManagementTools.Infrastructure.Services;
 using ProjectManagementTools.Web.Components;
 using ProjectManagementTools.Web.Services;
 using System.Reflection;
@@ -19,7 +18,7 @@ builder.Services.AddMudServices();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add HttpContextAccessor first - this is crucial
+// Add HttpContextAccessor first - this is crucial for Blazor Server
 builder.Services.AddHttpContextAccessor();
 
 // Add DbContext with proper configuration for Blazor Server
@@ -31,7 +30,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
         options.EnableSensitiveDataLogging();
     }
-});
+}, ServiceLifetime.Scoped); // Explicitly set to Scoped
 
 // Configure Identity with proper lifetime for Blazor Server
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -55,7 +54,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure cookie settings for Blazor Server
+// Configure Identity services for Blazor Server - This is crucial
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
@@ -68,7 +67,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// Register application services with explicit scoped lifetime
+// IMPORTANT: Add this for Blazor Server Identity support
+builder.Services.AddScoped<SignInManager<ApplicationUser>>();
+builder.Services.AddScoped<UserManager<ApplicationUser>>();
+
+// Register application services with explicit scoped lifetime using IServiceProvider pattern
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
@@ -106,6 +109,14 @@ builder.Services.AddLogging(logging =>
     }
 });
 
+// Add server-side rendering for better compatibility
+builder.Services.AddServerSideBlazor(options =>
+{
+    options.DetailedErrors = builder.Environment.IsDevelopment();
+    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
+    options.DisconnectedCircuitMaxRetained = 100;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -121,6 +132,9 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Enable routing
+app.UseRouting();
 
 // Authentication & Authorization - Order is important
 app.UseAuthentication();
@@ -170,7 +184,7 @@ catch (Exception ex)
 
 app.Run();
 
-// Helper method remains the same
+// Helper method for seeding admin user
 static async Task SeedAdminUser(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<Guid>> roleManager, ILogger logger)
 {
     try
